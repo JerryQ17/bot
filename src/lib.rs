@@ -1,8 +1,15 @@
 mod config;
 mod gocqhttp;
 
-use actix_web::{get, post, App, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    App,
+    get, post,
+    HttpResponse, HttpServer, Responder
+};
+
 use crate::config::Config;
+
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 pub struct Bot {
     config: Config,
@@ -13,12 +20,12 @@ impl Bot {
         Bot { config: Config::from_json(path).unwrap() }
     }
 
-    pub fn init(&self) -> Result<&Self, Box<dyn std::error::Error>> {
+    pub fn init(&self) -> Result<()> {
         let gch = self.config.gocqhttp();
         if !gch.is_running() {
             gch.start()?;
         }
-        Ok(self)
+        Ok(())
     }
 
     pub async fn run(&self) -> std::io::Result<()> {
@@ -27,7 +34,7 @@ impl Bot {
                 .service(hello)
                 .service(echo)
         )
-            .bind((self.config.addr().to_string(), 8080))?
+            .bind(self.config.addr())?
             .run()
             .await
     }

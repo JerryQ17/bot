@@ -1,25 +1,24 @@
+mod api;
+
 use std::path::Path;
-use std::net::SocketAddr;
-use serde::{Deserialize, Serialize};
+use std::net::{SocketAddr, TcpListener};
+use reqwest::Client;
+use serde::Deserialize;
 
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct GoCqhttp {
     path: String,
     server: SocketAddr,
     post: SocketAddr,
+    #[serde(skip)]
+    client: Client,
 }
+
 
 impl GoCqhttp {
     pub fn is_running(&self) -> bool {
-        let listener = std::net::TcpListener::bind(self.server);
-        match listener {
-            Ok(_) => {
-                drop(listener);
-                false
-            }
-            Err(_) => true,
-        }
+        TcpListener::bind(self.server).is_err()
     }
 
     pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
