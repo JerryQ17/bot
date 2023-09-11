@@ -31,7 +31,7 @@ impl Bot {
         Ok(())
     }
 
-    pub async fn run(&self) -> std::io::Result<()> {
+    pub async fn run(&self) -> Result<()> {
         HttpServer::new(||
             App::new()
                 .service(hello)
@@ -40,6 +40,7 @@ impl Bot {
             .bind(self.config.addr())?
             .run()
             .await
+            .map_err(|e| e.into())
     }
 }
 
