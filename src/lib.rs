@@ -1,15 +1,18 @@
 mod config;
+mod error;
 mod gocqhttp;
 
 use actix_web::{
     App,
     get, post,
-    HttpResponse, HttpServer, Responder
+    HttpResponse, HttpServer, Responder,
 };
 
+pub use crate::error::Error;
 use crate::config::Config;
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+pub type Result<T> = std::result::Result<T, Error>;
+
 
 pub struct Bot {
     config: Config,

@@ -5,6 +5,8 @@ use std::net::{SocketAddr, TcpListener};
 use reqwest::Client;
 use serde::Deserialize;
 
+use crate::Result;
+
 
 #[derive(Deserialize)]
 pub struct GoCqhttp {
@@ -21,7 +23,7 @@ impl GoCqhttp {
         TcpListener::bind(self.server).is_err()
     }
 
-    pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn start(&self) -> Result<()> {
         let cwd = Path::new(&self.path)
             .parent()
             .unwrap();
