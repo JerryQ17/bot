@@ -6,8 +6,12 @@ pub struct Error {
 }
 
 impl Error {
-    fn new(msg: &str) -> Error {
+    pub fn new<T: ToString>(msg: &T) -> Error {
         Error { msg: msg.to_string() }
+    }
+
+    pub fn from_string(msg: String) -> Error {
+        Error { msg }
     }
 }
 
