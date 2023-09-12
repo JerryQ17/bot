@@ -35,7 +35,7 @@ impl<T: DeserializeOwned> APIResponse<T> {
             200 | 401 | 403 | 404 | 406 => Ok(response.json::<APIResponse<T>>().await?),
             _ => {
                 let msg = format!("API请求失败，代码{}: {}", status, response.text().await?);
-                Err(Error::from_string(msg))
+                Err(Error::from(msg))
             }
         }
     }
@@ -45,20 +45,16 @@ impl<T: DeserializeOwned> APIResponse<T> {
             APIResponseStatus::Ok => {
                 match self.data {
                     Some(data) => Ok(data),
-                    None => Err(Error::from_string(String::from("API请求成功，但没有数据")))
+                    None => Err(Error::new(&"API请求成功，但没有数据"))
                 }
             }
             APIResponseStatus::Async => Err(Error::new(&"已提交异步处理，请等待处理完成")),
             APIResponseStatus::Failed => {
                 let msg = self.message.unwrap_or("API请求失败".to_string());
                 let detail = self.wording.unwrap_or("原因未知".to_string());
-                Err(Error::from_string(format!("{}: {}", msg, detail)))
+                Err(Error::from(format!("{}: {}", msg, detail)))
             }
         }
-    }
-
-    fn get_direct_data(&self) -> &Option<T> {
-        &self.data
     }
 }
 
@@ -93,7 +89,7 @@ impl<T> APIResponse<T> {
             APIResponseStatus::Failed => {
                 let msg = self.message.unwrap_or("API请求失败".to_string());
                 let detail = self.wording.unwrap_or("原因未知".to_string());
-                Err(Error::from_string(format!("{}: {}", msg, detail)))
+                Err(Error::from(format!("{}: {}", msg, detail)))
             }
         }
     }

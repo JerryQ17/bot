@@ -9,16 +9,18 @@ impl Error {
     pub fn new<T: ToString>(msg: &T) -> Error {
         Error { msg: msg.to_string() }
     }
-
-    pub fn from_string(msg: String) -> Error {
-        Error { msg }
-    }
 }
 
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "BotError: {}", self.msg)
+    }
+}
+
+impl From<String> for Error {
+    fn from(value: String) -> Self {
+        Error { msg: value }
     }
 }
 
