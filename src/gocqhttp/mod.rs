@@ -39,6 +39,12 @@ impl<'de> Deserialize<'de> for GoCqhttp {
 
 
 impl GoCqhttp {
+    pub fn new(path: String, server: SocketAddr, post: SocketAddr) -> GoCqhttp {
+        GoCqhttp {
+            path, server, post,
+            client: Client::new(),
+        }
+    }
     pub fn is_running(&self) -> bool {
         TcpListener::bind(self.server).is_err()
     }
