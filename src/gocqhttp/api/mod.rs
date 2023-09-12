@@ -97,11 +97,11 @@ impl<T> APIResponse<T> {
 
 impl GoCqhttp {
     pub fn get(&self, endpoint: &str) -> RequestBuilder {
-        self.client.get(self.server.to_string() + endpoint)
+        self.client.get(format!("http://{}{}", self.server, endpoint))
     }
 
     pub fn post(&self, endpoint: &str) -> RequestBuilder {
-        self.client.post(self.server.to_string() + endpoint)
+        self.client.post(format!("http://{}{}", self.server, endpoint))
     }
 }
 
