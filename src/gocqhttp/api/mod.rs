@@ -1,16 +1,15 @@
 mod account;
 
-use std::io::Error;
-use std::io::ErrorKind;
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use reqwest::{RequestBuilder, Response};
 
+use crate::Error;
 use crate::Result;
 use crate::gocqhttp::GoCqhttp;
 
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 struct APIResponse<T> {
     status: String,
     retcode: i32,
@@ -21,6 +20,13 @@ struct APIResponse<T> {
 }
 
 
+enum APIResponseStatus {
+    Ok,
+    Async,
+    Failed,
+}
+
+
 // 从API响应中提取数据
 impl<T: DeserializeOwned> APIResponse<T> {
     async fn from_response(response: Response) -> Result<Self> {
@@ -28,45 +34,46 @@ impl<T: DeserializeOwned> APIResponse<T> {
         match status {
             200 | 401 | 403 | 404 | 406 => Ok(response.json::<APIResponse<T>>().await?),
             _ => {
-                let msg = format!("执行API请求失败，代码{}: {}", status, response.text().await?);
-                Err(Error::new(ErrorKind::Other, msg).into())
+                let msg = format!("API请求失败，代码{}: {}", status, response.text().await?);
+                Err(Error::from_string(msg))
             }
         }
     }
 
-    fn data(self) -> Result<Option<T>> {
-        if self.is_ok() {
-            Ok(self.data)
-        } else if self.is_async() {
-            Err(Error::new(
-                ErrorKind::Other,
-                "已提交异步处理，请等待处理完成",
-            ).into())
-        } else {
-            let msg = self.message.unwrap_or("API Request Failed".to_string());
-            let detail = self.wording.unwrap_or("Unknown Reason".to_string());
-            Err(Error::new(
-                ErrorKind::Other,
-                format!("{}: {}", msg, detail),
-            ).into())
+    fn data(self) -> Result<T> {
+        match self.status() {
+            APIResponseStatus::Ok => {
+                match self.data {
+                    Some(data) => Ok(data),
+                    None => Err(Error::from_string(String::from("API请求成功，但没有数据")))
+                }
+            }
+            APIResponseStatus::Async => Err(Error::new(&"已提交异步处理，请等待处理完成")),
+            APIResponseStatus::Failed => {
+                let msg = self.message.unwrap_or("API请求失败".to_string());
+                let detail = self.wording.unwrap_or("原因未知".to_string());
+                Err(Error::from_string(format!("{}: {}", msg, detail)))
+            }
         }
     }
 
-    fn unwrap_data(self) -> Result<T> {
-        let data = self.data()?;
-        match data {
-            Some(data) => Ok(data),
-            None => Err(Error::new(
-                ErrorKind::Other,
-                "API Request Failed: No Data",
-            ).into())
-        }
+    fn get_direct_data(&self) -> &Option<T> {
+        &self.data
     }
 }
 
 
 // 检查API请求状态
 impl<T> APIResponse<T> {
+    fn status(&self) -> APIResponseStatus {
+        match self.status.as_str() {
+            "ok" => APIResponseStatus::Ok,
+            "async" => APIResponseStatus::Async,
+            "failed" => APIResponseStatus::Failed,
+            _ => panic!("Invalid API Response Status: {}", self.status)
+        }
+    }
+
     fn is_ok(&self) -> bool {
         self.status == "ok" || self.retcode == 0
     }
@@ -77,6 +84,18 @@ impl<T> APIResponse<T> {
 
     fn is_failed(&self) -> bool {
         self.status == "failed" || (self.retcode != 0 && self.retcode != 1)
+    }
+
+    fn assert_ok(self) -> Result<()> {
+        match self.status() {
+            APIResponseStatus::Ok => Ok(()),
+            APIResponseStatus::Async => Err(Error::new(&"已提交异步处理，请等待处理完成")),
+            APIResponseStatus::Failed => {
+                let msg = self.message.unwrap_or("API请求失败".to_string());
+                let detail = self.wording.unwrap_or("原因未知".to_string());
+                Err(Error::from_string(format!("{}: {}", msg, detail)))
+            }
+        }
     }
 }
 
@@ -116,7 +135,7 @@ mod tests {
         }"#;
         let resp = serde_json::from_str::<APIResponse<TestStruct>>(json).unwrap();
         assert!(resp.is_ok());
-        let data = resp.unwrap_data().unwrap();
+        let data = resp.data().unwrap();
         assert_eq!(data, TestStruct { a: 123456, b: "nickname".to_string() });
         assert_eq!(data.a, 123456);
         assert_eq!(data.b, "nickname");
@@ -162,7 +181,7 @@ mod tests {
         let resp = serde_json::from_str::<APIResponse<TestEmptyStruct>>(json).unwrap();
         assert!(resp.is_ok());
         let data = resp.data().unwrap();
-        assert_eq!(data.unwrap(), TestEmptyStruct {});
+        assert_eq!(data, TestEmptyStruct {});
     }
 
     #[test]
@@ -175,7 +194,6 @@ mod tests {
         }"#;
         let resp = serde_json::from_str::<APIResponse<()>>(json).unwrap();
         assert!(resp.is_ok());
-        dbg!(&resp);
-        assert!(resp.data().is_ok());
+        assert!(resp.assert_ok().is_ok());
     }
 }
