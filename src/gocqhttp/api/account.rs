@@ -53,8 +53,7 @@ impl GoCqhttp {
     /// [获取登录号信息](https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E7%99%BB%E5%BD%95%E5%8F%B7%E4%BF%A1%E6%81%AF)
     pub async fn get_login_info(&self) -> Result<LoginInfo> {
         let resp = self
-            .get("/get_login_info")
-            .send()
+            .get("get_login_info")
             .await?;
         APIResponse::<LoginInfo>::from_response(resp)
             .await?
@@ -67,7 +66,7 @@ impl GoCqhttp {
         nickname: String, company: String, email: String, college: String, personal_note: String,
     ) -> Result<()> {
         let resp = self
-            .post("/set_qq_profile")
+            .post_builder("set_qq_profile")
             .query(&[
                 ("nickname", nickname),
                 ("company", company),
@@ -88,16 +87,14 @@ impl GoCqhttp {
     ///
     /// 注意：在go-cqhttp文档中未说明该API的返回值，因此该API返回了一个`Result<Response>`，Response中的内容请自行解析
     pub async fn qidian_get_account_info(&self) -> Result<Response> {
-        self.get("/get_login_info")
-            .send()
+        self.get("get_login_info")
             .await
-            .map_err(|e| e.into())
     }
 
     /// [获取在线机型](https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E5%9C%A8%E7%BA%BF%E6%9C%BA%E5%9E%8B)
     pub async fn get_model_show(&self, model: String) -> Result<ModelShowVariants> {
         let resp = self
-            .get("/_get_model_show")
+            .get_builder("_get_model_show")
             .query(&[("model", model)])
             .send()
             .await?;
@@ -109,7 +106,7 @@ impl GoCqhttp {
     /// [设置在线机型](https://docs.go-cqhttp.org/api/#%E8%AE%BE%E7%BD%AE%E5%9C%A8%E7%BA%BF%E6%9C%BA%E5%9E%8B)
     pub async fn set_model_show(&self, model: String, model_show: String) -> Result<()> {
         let resp = self
-            .post("/_set_model_show")
+            .post_builder("_set_model_show")
             .query(&[
                 ("model", model),
                 ("model_show", model_show)
@@ -124,7 +121,7 @@ impl GoCqhttp {
     /// [获取当前账号在线客户端列表](https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E5%BD%93%E5%89%8D%E8%B4%A6%E5%8F%B7%E5%9C%A8%E7%BA%BF%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%88%97%E8%A1%A8)
     pub async fn get_online_clients(&self, no_cache: bool) -> Result<ClientDevices> {
         let resp = self
-            .get("/_set_model_show")
+            .get_builder("_set_model_show")
             .query(&[("no_cache", no_cache)])
             .send()
             .await?;

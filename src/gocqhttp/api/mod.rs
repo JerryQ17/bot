@@ -107,12 +107,16 @@ impl<T> APIResponse<T> {
 }
 
 impl GoCqhttp {
-    pub fn get(&self, endpoint: &str) -> RequestBuilder {
-        self.client.get(format!("http://{}{}", self.server, endpoint))
+    fn get_builder(&self, endpoint: &str) -> RequestBuilder {
+        self.client.get(format!("http://{}/{}", self.server, endpoint))
     }
 
-    pub fn post(&self, endpoint: &str) -> RequestBuilder {
-        self.client.post(format!("http://{}{}", self.server, endpoint))
+    fn post_builder(&self, endpoint: &str) -> RequestBuilder {
+        self.client.post(format!("http://{}/{}", self.server, endpoint))
+    }
+
+    async fn get(&self, endpoint: &str) -> Result<Response> {
+        self.get_builder(endpoint).send().await.map_err(|e|e.into())
     }
 }
 
