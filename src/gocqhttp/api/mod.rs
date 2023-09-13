@@ -1,5 +1,15 @@
 mod account;
 mod friend_info;
+mod friend_operation;
+mod message;
+mod picture;
+mod voice;
+mod management;
+mod group_message;
+mod group_setting;
+mod group_operation;
+mod file;
+mod gocqhttp_related;
 
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
