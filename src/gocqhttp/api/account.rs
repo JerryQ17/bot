@@ -137,19 +137,7 @@ impl GoCqhttp {
 // 仅测试不会改变QQ的状态的API
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::fs::File;
-    use std::io::BufReader;
-
-    fn setup() -> GoCqhttp {
-        let file = File::open("config/gch_api_test.json").unwrap();
-        let reader = BufReader::new(file);
-        let gch: GoCqhttp = serde_json::from_reader(reader).unwrap();
-        if !gch.is_running() {
-            gch.start().unwrap();
-        }
-        gch
-    }
+    use super::super::setup_gocqhttp_for_api_test::setup;
 
     #[tokio::test]
     async fn test_get_login_info() {

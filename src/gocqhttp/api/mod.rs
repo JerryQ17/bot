@@ -1,4 +1,5 @@
 mod account;
+mod friend_info;
 
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
@@ -191,5 +192,21 @@ mod tests {
         let resp = serde_json::from_str::<APIResponse<()>>(json).unwrap();
         assert!(resp.is_ok());
         assert!(resp.assert_ok().is_ok());
+    }
+}
+
+mod setup_gocqhttp_for_api_test{
+    use super::GoCqhttp;
+    use std::fs::File;
+    use std::io::BufReader;
+
+    pub fn setup() -> GoCqhttp {
+        let file = File::open("config/gch_api_test.json").unwrap();
+        let reader = BufReader::new(file);
+        let gch: GoCqhttp = serde_json::from_reader(reader).unwrap();
+        if !gch.is_running() {
+            gch.start().unwrap();
+        }
+        gch
     }
 }
