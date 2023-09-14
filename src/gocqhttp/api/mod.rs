@@ -130,9 +130,6 @@ impl GoCqhttp {
     }
 }
 
-#[macro_use]
-pub mod marcos {}
-
 #[cfg(test)]
 mod tests {
     use super::*;

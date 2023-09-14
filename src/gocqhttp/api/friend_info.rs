@@ -38,11 +38,11 @@ pub struct Friend {
 #[derive(Deserialize)]
 pub struct UnidirectionalFriend {
     /// QQ号
-    user_id: i64,
+    pub user_id: i64,
     /// 昵称
-    nickname: String,
+    pub nickname: String,
     /// 来源
-    source: String,
+    pub source: String,
 }
 
 impl GoCqhttp {
