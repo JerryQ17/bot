@@ -1,8 +1,8 @@
 use serde::Deserialize;
 
-use crate::Result;
-use crate::gocqhttp::GoCqhttp;
 use crate::gocqhttp::api::APIResponse;
+use crate::gocqhttp::GoCqhttp;
+use crate::{http_get_response, Result};
 
 /// `get_stranger_info`API的响应数据结构
 #[derive(Deserialize)]
@@ -34,7 +34,6 @@ pub struct Friend {
     pub remark: String,
 }
 
-
 /// `get_unidirectional_friend_list`API的响应数据结构
 #[derive(Deserialize)]
 pub struct UnidirectionalFriend {
@@ -46,47 +45,30 @@ pub struct UnidirectionalFriend {
     source: String,
 }
 
-
 impl GoCqhttp {
     /// [获取陌生人信息](https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E9%99%8C%E7%94%9F%E4%BA%BA%E4%BF%A1%E6%81%AF)
     pub async fn get_stranger_info(&self, user_id: i64, no_cache: bool) -> Result<StrangeInfo> {
-        let resp = self
-            .get_builder("get_stranger_info")
-            .query(&[("user_id", user_id)])
-            .query(&[("no_cache", no_cache)])
-            .send()
-            .await?;
-        APIResponse::<StrangeInfo>::from_response(resp)
-            .await?
-            .data()
+        let resp = http_get_response!(self, "get_stranger_info", user_id, no_cache);
+        APIResponse::get_data_in_response(resp).await
     }
 
     /// [获取好友列表](https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E5%A5%BD%E5%8F%8B%E5%88%97%E8%A1%A8)
     pub async fn get_friend_list(&self) -> Result<Vec<Friend>> {
-        let resp = self
-            .get("get_friend_list")
-            .await?;
-        APIResponse::<Vec<Friend>>::from_response(resp)
-            .await?
-            .data()
+        let resp = self.get("get_friend_list").await?;
+        APIResponse::get_data_in_response(resp).await
     }
 
     /// [获取单向好友列表](https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E5%8D%95%E5%90%91%E5%A5%BD%E5%8F%8B%E5%88%97%E8%A1%A8)
     pub async fn get_unidirectional_friend_list(&self) -> Result<Vec<UnidirectionalFriend>> {
-        let resp = self
-            .get("get_unidirectional_friend_list")
-            .await?;
-        APIResponse::<Vec<UnidirectionalFriend>>::from_response(resp)
-            .await?
-            .data()
+        let resp = self.get("get_unidirectional_friend_list").await?;
+        APIResponse::get_data_in_response(resp).await
     }
 }
-
 
 // 仅测试不会改变QQ的状态的API
 #[cfg(test)]
 mod tests {
-    use super::super::setup_gocqhttp_for_api_test::setup;
+    use super::super::api_test_setup::setup;
 
     #[tokio::test]
     async fn test_get_strange_info() {

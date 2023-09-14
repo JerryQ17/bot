@@ -1,24 +1,24 @@
 mod account;
+mod file;
 mod friend_info;
 mod friend_operation;
+mod gocqhttp_related;
+mod group_message;
+mod group_operation;
+mod group_setting;
+mod management;
 mod message;
 mod picture;
 mod voice;
-mod management;
-mod group_message;
-mod group_setting;
-mod group_operation;
-mod file;
-mod gocqhttp_related;
+#[macro_use]
+mod macros;
 
-use serde::Deserialize;
-use serde::de::DeserializeOwned;
 use reqwest::{RequestBuilder, Response};
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
 
-use crate::Error;
-use crate::Result;
 use crate::gocqhttp::GoCqhttp;
-
+use crate::{Error, Result};
 
 #[derive(Deserialize)]
 struct APIResponse<T> {
@@ -30,13 +30,11 @@ struct APIResponse<T> {
     echo: Option<String>,
 }
 
-
 enum APIResponseStatus {
     Ok,
     Async,
     Failed,
 }
-
 
 // 从API响应中提取数据
 impl<T: DeserializeOwned> APIResponse<T> {
@@ -51,14 +49,16 @@ impl<T: DeserializeOwned> APIResponse<T> {
         }
     }
 
+    async fn get_data_in_response(r: Response) -> Result<T> {
+        APIResponse::<T>::from_response(r).await?.data()
+    }
+
     fn data(self) -> Result<T> {
         match self.status() {
-            APIResponseStatus::Ok => {
-                match self.data {
-                    Some(data) => Ok(data),
-                    None => Err(Error::new(&"API请求成功，但没有数据"))
-                }
-            }
+            APIResponseStatus::Ok => match self.data {
+                Some(data) => Ok(data),
+                None => Err(Error::new(&"API请求成功，但没有数据")),
+            },
             APIResponseStatus::Async => Err(Error::new(&"已提交异步处理，请等待处理完成")),
             APIResponseStatus::Failed => {
                 let msg = self.message.unwrap_or("API请求失败".to_string());
@@ -69,6 +69,11 @@ impl<T: DeserializeOwned> APIResponse<T> {
     }
 }
 
+impl APIResponse<()> {
+    async fn assert_ok_in_response(r: Response) -> Result<()> {
+        APIResponse::<()>::from_response(r).await?.assert_ok()
+    }
+}
 
 // 检查API请求状态
 impl<T> APIResponse<T> {
@@ -77,7 +82,7 @@ impl<T> APIResponse<T> {
             "ok" => APIResponseStatus::Ok,
             "async" => APIResponseStatus::Async,
             "failed" => APIResponseStatus::Failed,
-            _ => panic!("Invalid API Response Status: {}", self.status)
+            _ => panic!("Invalid API Response Status: {}", self.status),
         }
     }
 
@@ -108,17 +113,25 @@ impl<T> APIResponse<T> {
 
 impl GoCqhttp {
     fn get_builder(&self, endpoint: &str) -> RequestBuilder {
-        self.client.get(format!("http://{}/{}", self.server, endpoint))
+        self.client
+            .get(format!("http://{}/{}", self.server, endpoint))
     }
 
     fn post_builder(&self, endpoint: &str) -> RequestBuilder {
-        self.client.post(format!("http://{}/{}", self.server, endpoint))
+        self.client
+            .post(format!("http://{}/{}", self.server, endpoint))
     }
 
     async fn get(&self, endpoint: &str) -> Result<Response> {
-        self.get_builder(endpoint).send().await.map_err(|e|e.into())
+        self.get_builder(endpoint)
+            .send()
+            .await
+            .map_err(|e| e.into())
     }
 }
+
+#[macro_use]
+pub mod marcos {}
 
 #[cfg(test)]
 mod tests {
@@ -147,11 +160,16 @@ mod tests {
         let resp = serde_json::from_str::<APIResponse<TestStruct>>(json).unwrap();
         assert!(resp.is_ok());
         let data = resp.data().unwrap();
-        assert_eq!(data, TestStruct { a: 123456, b: "nickname".to_string() });
+        assert_eq!(
+            data,
+            TestStruct {
+                a: 123456,
+                b: String::from("nickname")
+            }
+        );
         assert_eq!(data.a, 123456);
         assert_eq!(data.b, "nickname");
     }
-
 
     #[test]
     fn test_api_response_async() {
@@ -209,7 +227,7 @@ mod tests {
     }
 }
 
-mod setup_gocqhttp_for_api_test{
+mod api_test_setup {
     use super::GoCqhttp;
     use std::fs::File;
     use std::io::BufReader;
